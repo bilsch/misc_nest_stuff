@@ -57,7 +57,6 @@ while (1)
   nest = NestThermostat::Nest.new({email: "__enter_your_userid__", password: "__your_password__"})
   device_id = nest.device_id
   heater_state = nest.status["shared"]["#{device_id}"]["hvac_heater_state"]
-  end_loop_sleep = true # used to toggle a sleep at the end of the cycle
   
   # Pull stats from graphite
   client = HTTPClient.new()
@@ -79,9 +78,8 @@ while (1)
     if heater_state
       Syslog.log(Syslog::LOG_INFO, "Turn on the humidifier heater_state: #{heater_state} - #{avg_humidity} below target of #{humidity_target}")
       io.write(relay, HIGH)
-      Syslog.log(Syslog::LOG_INFO, "30 second nap...")
-      end_loop_sleep = false
-      sleep 30
+      sleep(30)
+      io.write(relay, LOW)
     else
       if debug 
         Syslog.log(Syslog::LOG_DEBUG, "Would turn on but Heater not running heater_state: #{heater_state} - #{avg_humidity} below target of #{humidity_target}")
@@ -95,8 +93,8 @@ while (1)
   end
 
   # Pulse the humidifier on/off in the loop so we don't waste too much water
-  if end_loop_sleep
-    sleep(30)
+  if debug 
+    Syslog.log(Syslog::LOG_DEBUG, "loop")
   end
-  io.write(relay, LOW)
+  sleep(30)
 end
